@@ -3,7 +3,7 @@
 //
 
 #include "stdafx.h"
-
+#include "DImage.h"
 // SHARED_HANDLERS can be defined in an ATL project implementing preview, thumbnail
 // and search filter handlers and allows sharing of document code with that project.
 #ifndef SHARED_HANDLERS
@@ -148,7 +148,18 @@ void SaraBitmapa(CBitmap *osnovnaBitmapa,int dezen,int boja)
 	osnovnaBitmapa->GetBitmap(&bm);
 	BYTE *baferBitmap = new BYTE[bm.bmWidthBytes*bm.bmHeight];
 	osnovnaBitmapa->GetBitmapBits(bm.bmWidthBytes*bm.bmHeight, baferBitmap);
-	int N = 20, m = 0;
+	//for (int i = 0; i < bm.bmHeight; i++)
+	
+	for (int j = 0; j <= bm.bmHeight*bm.bmWidthBytes; j += 6)
+	{
+		baferBitmap[j] = 0;
+		baferBitmap[j + 1] = 0;
+		baferBitmap[j + 2] = 255;
+		baferBitmap[j+3] = 255;
+		baferBitmap[j + 4] = 0;
+		baferBitmap[j + 5] = 0;
+	}
+	/*int N = 20, m = 0;
 	if (dezen == 0){
 	for (int i = 0; i < bm.bmHeight; i++)
 	{
@@ -266,7 +277,7 @@ void SaraBitmapa(CBitmap *osnovnaBitmapa,int dezen,int boja)
 			
 		}
 		
-	}
+	}*/
 	/*
 	for (int i = 0; i < bm.bmHeight; i++)
 	{
@@ -307,7 +318,6 @@ void CrtajBitmapu(CDC *pDC, CString naziv,bool sara,int dezen,int boja)
 
 	maskaBitmapa.CreateBitmap(bm.bmWidth, bm.bmHeight, 1, 1, NULL);//Maska je monohromatska
 
-
 	CDC* srcDC = new CDC();
 	CDC* dstDC = new CDC();
 	srcDC->CreateCompatibleDC(NULL);
@@ -323,41 +333,111 @@ void CrtajBitmapu(CDC *pDC, CString naziv,bool sara,int dezen,int boja)
 	COLORREF topLeft = srcDC->GetPixel(5, 5);
 	COLORREF oldBkcolor = srcDC->SetBkColor(topLeft);//selektovanje te boje za backgroundColor
 
-
-
 	dstDC->BitBlt(0, 0, bm.bmWidth, bm.bmHeight, srcDC, 0, 0, SRCCOPY);
 	srcDC->SetTextColor(RGB(255, 255, 255));
 	srcDC->SetBkColor(RGB(0, 0, 0));
 	srcDC->BitBlt(0, 0, bm.bmWidth, bm.bmHeight, dstDC, 0, 0, SRCAND);
 
-	srcDC->SelectObject(oldSrcBmp);
-	dstDC->SelectObject(oldDstBmp);
-	srcDC->DeleteDC();
-	dstDC->DeleteDC();
-	delete srcDC;
-	delete dstDC;
+	pDC->BitBlt(0, 0, bm.bmWidth, bm.bmHeight, dstDC, 0, 0, SRCAND);
 
-	CDC* memDC = new CDC();
+	pDC->BitBlt(0, 0, bm.bmWidth, bm.bmHeight, srcDC, 0, 0, SRCPAINT);
+	/*
+	//SAVE-OVANJE BITMAPE
+	//slika.Attach(osnovnaBitmapa);
+	//slika.Save(_T(".\\test1.bmp"));
+	*/
+}
+
+void CLab3BitmapeView::SavePicture(CDC *pDC, CString pic, CRect rect)
+{
+	CDC *memDC = new CDC();
 	memDC->CreateCompatibleDC(NULL);
-	if (sara)
-	{
-		SaraBitmapa(&osnovnaBitmapa, dezen,boja);
-	}
-	memDC->SelectObject(&maskaBitmapa);
 
-	pDC->BitBlt(0, 0, bm.bmWidth, bm.bmHeight, memDC, 0, 0, SRCAND);
+	CBitmap bmp;
+	bmp.CreateCompatibleBitmap(pDC, rect.Width(), rect.Height());
+	memDC->SelectObject(&bmp);
 
-	memDC->SelectObject(&osnovnaBitmapa);
-	pDC->BitBlt(0, 0, bm.bmWidth, bm.bmHeight, memDC, 0, 0, SRCPAINT);
+	memDC->BitBlt(0, 0, rect.Width(), rect.Height(), pDC, rect.left, rect.top, SRCCOPY);
+
+	DImage *img = new DImage(bmp);
+	img->Save(pic);
+
+	delete img;
+
 	memDC->DeleteDC();
 	delete memDC;
-	osnovnaBitmapa.DeleteObject();
-	maskaBitmapa.DeleteObject();
+}
+void CLab3BitmapeView::DrawMipMap(CDC *pDC, CString pic)
+{
+
+	CDC* pomDC = new CDC();
+	pomDC->CreateCompatibleDC(NULL);
+	CBitmap bitmapa;
+	CImage slika;
+	slika.Load(CString("ruka1.bmp"));
+	bitmapa.Attach(slika.Detach());
+	BITMAP bs;
+	bitmapa.GetBitmap(&bs);
+	pomDC->SelectObject(&bitmapa);
+	int w = bs.bmWidth;
+	int h = bs.bmHeight;
+	int offsetx = 0;
+	int offsety = 0;
+	while (w > 1 && h > 1)
+	{
+		pDC->StretchBlt(offsetx, offsety, w, h, pomDC, 0, 0, bs.bmWidth, bs.bmHeight, SRCCOPY);
+		offsetx += w;
+		offsety += h / 2;
+		w /= 2;
+		h /= 2;
+	}
+	pomDC->DeleteDC();
+	delete pomDC;
+
 
 }
 
+void CLab3BitmapeView::ReduceSize(CDC* pDC)
+{
+	
+	DImage* img = new DImage();
+	img->Load(CString("ruka1.bmp"));
+	CRect rect;
+	GetClientRect(&rect);
 
+	CDC *memDC = new CDC();
+	memDC->CreateCompatibleDC(pDC);
 
+	CBitmap bmp;
+	bmp.CreateCompatibleBitmap(pDC, rect.Width(), rect.Height());
+	memDC->SelectObject(&bmp);
+
+	img->Draw(pDC, CRect(0, 0, img->Width(), img->Height()), CRect(0, 0, img->Width(), img->Height()));
+
+	int w = img->Width() / 4;
+	int h = img->Height() / 4;
+	int k, m;
+	k = 0;
+	m = 0;
+	for (int i = 0; i < w; i++) {
+		for (int j = 0; j < h; j++) {
+			COLORREF p1 = GetPixel(pDC->m_hDC, k, m);
+			COLORREF p2 = GetPixel(pDC->m_hDC, k, m + 1);
+			COLORREF p3 = GetPixel(pDC->m_hDC, k + 1, m);
+			COLORREF p4 = GetPixel(pDC->m_hDC, k + 1, m + 1);
+
+			int r = (GetRValue(p1) + GetRValue(p2) + GetRValue(p3) + GetRValue(p4)) / 4;
+			int g = (GetGValue(p1) + GetGValue(p2) + GetGValue(p3) + GetGValue(p4)) / 4;
+			int b = (GetBValue(p1) + GetBValue(p2) + GetBValue(p3) + GetBValue(p4)) / 4;
+
+			memDC->SetPixel(i, j, RGB(r, g, b));
+			m = m + 2;
+		}
+		k = k + 2;
+	}
+
+	pDC->BitBlt(0, 0,  img->Width()/4, img->Height()/4, memDC, 0, 0, SRCCOPY);
+}
 
 void CLab3BitmapeView::OnDraw(CDC* pDC)
 {
@@ -367,7 +447,7 @@ void CLab3BitmapeView::OnDraw(CDC* pDC)
 		return;
 	//XYKJX
 	//RRCSN
-
+	
 	CRect rect;
 	GetClientRect(&rect);
 	pDC->SetMapMode(MM_ANISOTROPIC);
@@ -377,8 +457,13 @@ void CLab3BitmapeView::OnDraw(CDC* pDC)
 	pDC->SetViewportExt(rect.right, rect.bottom);
 	pDC->SetWindowOrg(0, 0);
 	pDC->SetGraphicsMode(GM_ADVANCED);
-
-
+	
+	//DrawMipMap(pDC, CString("ruka1.bmp"));
+	//ReduceSize(pDC);
+	//SavePicture(pDC, CString("paki.bmp"), CRect(0, 0, 100, 100));
+	//CrtajBitmapu(pDC, CString("ruka1.bmp"), 0, 0, 0);
+	
+	
 	CDC * memDC = new CDC();
 	memDC->CreateCompatibleDC(pDC);
 	CBitmap memBitmapa;

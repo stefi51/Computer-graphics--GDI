@@ -100,6 +100,7 @@
     <Text Include="ReadMe.txt" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\..\..\Downloads\DImage3\DImage.h" />
     <ClInclude Include="Lab3-Bitmape.h" />
     <ClInclude Include="Lab3-BitmapeDoc.h" />
     <ClInclude Include="Lab3-BitmapeView.h" />
@@ -109,6 +110,7 @@
     <ClInclude Include="targetver.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\..\..\Downloads\DImage3\DImage.cpp" />
     <ClCompile Include="Lab3-Bitmape.cpp" />
     <ClCompile Include="Lab3-BitmapeDoc.cpp" />
     <ClCompile Include="Lab3-BitmapeView.cpp" />

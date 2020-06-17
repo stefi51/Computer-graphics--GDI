@@ -29,6 +29,9 @@ public:
 
 // Overrides
 public:
+	void SavePicture(CDC * pDC, CString pic, CRect rect);
+	void DrawMipMap(CDC * pDC, CString pic);
+	void ReduceSize(CDC *pDC);
 	virtual void OnDraw(CDC* pDC);  // overridden to draw this view
 	virtual BOOL PreCreateWindow(CREATESTRUCT& cs);
 protected:
